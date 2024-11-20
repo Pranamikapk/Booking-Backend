@@ -1,0 +1,35 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const jwt_config_1 = require("../Config/jwt_config");
+const adminController_1 = require("../Controller/adminController");
+const hotelModel_1 = __importDefault(require("../Model/hotelModel"));
+const managerModel_1 = __importDefault(require("../Model/managerModel"));
+const userModel_1 = __importDefault(require("../Model/userModel"));
+const adminRepository_1 = require("../Repository/adminRepository");
+const hotelRepository_1 = require("../Repository/hotelRepository");
+const managerRepository_1 = require("../Repository/managerRepository");
+const adminServices_1 = require("../Services/adminServices");
+const hotelService_1 = require("../Services/hotelService");
+const managerService_1 = require("../Services/managerService");
+const adminRouter = express_1.default.Router();
+const adminRepository = new adminRepository_1.AdminRepository(userModel_1.default, managerModel_1.default, hotelModel_1.default);
+const hotelRepository = new hotelRepository_1.HotelRepository(hotelModel_1.default);
+const managerRepository = new managerRepository_1.ManagerRepository(managerModel_1.default);
+const adminService = new adminServices_1.AdminService(adminRepository);
+const hotelService = new hotelService_1.HotelService(hotelRepository);
+const managerService = new managerService_1.ManagerService(managerRepository);
+const adminController = new adminController_1.AdminController(adminService);
+adminRouter.post("/register", adminController.registerAdmin);
+adminRouter.post("/login", adminController.adminLogin);
+adminRouter.get("/users", jwt_config_1.adminVerifyToken, adminController.listUser);
+adminRouter.post("/userBlock", jwt_config_1.adminVerifyToken, adminController.userBlock);
+adminRouter.get("/managers", jwt_config_1.adminVerifyToken, adminController.listManager);
+adminRouter.get("/hotels", jwt_config_1.adminVerifyToken, adminController.listHotels);
+adminRouter.post("/approve/:hotelId", jwt_config_1.adminVerifyToken, adminController.approveHotel);
+adminRouter.post("/list/:hotelId", jwt_config_1.adminVerifyToken, adminController.listUnlistHotel);
+// adminRouter.get("/transactions",  getAdminTransactions)
+exports.default = adminRouter;
