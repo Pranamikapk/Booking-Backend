@@ -47,4 +47,13 @@ export class AdminRepository implements IAdminRepository {
     const newHotel = new this.hotelModel(hotel)
     return newHotel.save();
   }
+  
+  async updateWallet(adminId: string, amount: number): Promise<IUser | null> {
+    const updatedAdmin= await this.userModel.findByIdAndUpdate(
+      adminId,
+      { $inc: { wallet: amount } },
+      { new: true }
+    );
+    return updatedAdmin;
+  }
 }

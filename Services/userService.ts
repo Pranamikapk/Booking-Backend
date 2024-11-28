@@ -110,13 +110,23 @@ export class UserService implements IUserService {
     if (user.isBlocked) {
       throw new Error('User is blocked.');
     }
+    const plainUser = (user as any).toObject();
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { password: _, ...userWithoutPassword } = plainUser;
 
-     const token = createToken(user._id, user.role);
-    const refreshToken = createRefreshToken(user._id, user.role);
+     const token = createToken(user._id, 'client');
+    const refreshToken = createRefreshToken(user._id, 'client');
   
     return { user: userWithoutPassword, token, refreshToken };
+  }
+
+  async generateNewAccessToken(userId: string): Promise<string> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return createToken(user._id, 'client');
   }
 
   async updateUser(userId: string, userData: Partial<IUser>): Promise<IUser> {

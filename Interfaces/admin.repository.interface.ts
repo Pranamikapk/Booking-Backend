@@ -11,4 +11,5 @@ export interface IAdminRepository {
     findAllHotels(): Promise<IHotel[]>;
     findHotelById(id: Types.ObjectId): Promise<IHotel | null>;
     updateHotel(hotel: IHotel): Promise<IHotel>;
+    updateWallet(adminId: string, amount: number): Promise<IUser | null> 
   }

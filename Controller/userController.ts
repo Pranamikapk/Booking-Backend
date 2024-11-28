@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import { createToken } from "../Config/jwt_config";
+import { createRefreshToken, createToken } from "../Config/jwt_config";
 import HTTP_statusCode from "../Enums/httpStatusCodes";
 import { IUserService } from "../Interfaces/user.service.interface";
 
@@ -31,7 +31,8 @@ export class UserController {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        token: createToken(user._id, user.role),
+        token: createToken(user._id, 'client'),
+        refreshToken: createRefreshToken(user._id,'client')
       });
     } catch (error: any) {
       console.error("Error in user registration:", error);
@@ -54,7 +55,9 @@ export class UserController {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        token: createToken(user._id, user.role),
+        token: createToken(user._id, 'client'),
+        refreshToken: createRefreshToken(user._id,'client')
+
       });
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
@@ -92,28 +95,53 @@ export class UserController {
       }
   
       const { user, token, refreshToken } = await this.userService.login(email, password);
-  
-      console.log('Login successful for user:', user);
+      console.log("User:",user,"Token:" ,token,"Refresh:",refreshToken);
+
       res.cookie('user_access_token', token, { 
         httpOnly: true ,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 15 * 60,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 15 * 60 * 1000,
       });
       res.cookie('user_refresh_token', refreshToken, { 
         httpOnly: true ,
-        sameSite: 'strict',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
-      res.json(user);
+      console.log("user:",user,token);
+      
+      res.json({message:"Logged In successfully" ,user , token});
     } catch (error: any) {
       console.error('Error during login:', error.message);
       res.status(HTTP_statusCode.Unauthorized).json({ message: 'Invalid credentials' });
     }
   };
   
+  verifyRefreshToken = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.body;  
+      
+      if (!userId) {
+        res.status(HTTP_statusCode.BadRequest).json({ error: 'User ID is missing' });
+        return;
+      }
 
+      const newAccessToken = await this.userService.generateNewAccessToken(userId);
+
+      res.cookie('user_access_token', newAccessToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 15 * 60 * 1000,
+      });
+
+      res.status(HTTP_statusCode.OK).json({ message: 'Token refreshed successfully', newAccessToken });
+    } catch (error: any) {
+      console.error("Error refreshing token:", error);
+      res.status(HTTP_statusCode.InternalServerError).json({ error: 'Failed to refresh token' });
+    }
+  };
 
   updateUser = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -136,7 +164,9 @@ export class UserController {
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
-        token: createToken(updatedUser._id, updatedUser.role),
+        token: createToken(updatedUser._id, 'client'),
+        refreshToken: createRefreshToken(updatedUser._id,'client')
+
       });
     } catch (error: any) {
       console.error("Error updating user:", error);
@@ -163,6 +193,7 @@ export class UserController {
           name: user.name,
           email: user.email,
           token: user.token,
+          // refreshtoken: user.refreshToken
         },
       });
     } catch (error: any) {

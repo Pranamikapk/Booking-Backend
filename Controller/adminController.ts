@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
+import HTTP_statusCode from '../Enums/httpStatusCodes';
+import { IDashboardService } from '../Interfaces/admin.dashboard.interface';
 import { IAdminService } from '../Interfaces/admin.service.interface';
 
 export class AdminController {
-  constructor(private adminService: IAdminService) {}
+  constructor(private adminService: IAdminService,
+    private dashboardService: IDashboardService
+  ) {}
 
   registerAdmin = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -19,29 +23,63 @@ export class AdminController {
     try {
       const { email, password } = req.body;
       const { user, token , refreshToken } = await this.adminService.loginAdmin(email, password);
-      res.cookie("admin_refresh_token", refreshToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-     });
+      console.log("User:",user,"Token:" ,token,"Refresh:",refreshToken);
+      
      res.cookie("admin_access_token", token, {
         httpOnly: true,
         sameSite: 'none',
         secure: true,
         maxAge: 15 * 60 * 1000,
      });
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        token,
-      });
+     res.cookie("admin_refresh_token", refreshToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+   });
+      res.status(HTTP_statusCode.OK).json({message:"Logged In Successfully",user,token});
     } catch (error) {
       res.status(400).json({ message: (error as Error).message });
     }
   };
+
+  // refreshToken = async (req: Request, res: Response): Promise<void> => {
+  //   try {
+  //     const refreshToken = req.cookies.admin_refresh_token;
+  //     if (!refreshToken) {
+  //       res.status(HTTP_statusCode.Unauthorized).json({ message: 'Refresh token not found' });
+  //       return;
+  //     }
+
+  //     const { user, token, refreshToken: newRefreshToken } = await this.adminService.refreshToken(refreshToken);
+
+  //     res.cookie("admin_refresh_token", newRefreshToken, {
+  //       httpOnly: true,
+  //       sameSite: 'none',
+  //       secure: true,
+  //       maxAge: 7 * 24 * 60 * 60 * 1000,
+  //     });
+  //     res.cookie("admin_access_token", token, {
+  //       httpOnly: true,
+  //       sameSite: 'none',
+  //       secure: true,
+  //       maxAge: 15 * 60 * 1000,
+  //     });
+
+  //     res.status(HTTP_statusCode.OK).json({
+  //       message: "Token refreshed successfully",
+  //       user: {
+  //         _id: user._id,
+  //         name: user.name,
+  //         email: user.email,
+  //         role: user.role,
+  //       },
+  //       token,
+  //     });
+  //   } catch (error) {
+  //     res.status(HTTP_statusCode.Unauthorized).json({ message: (error as Error).message });
+  //   }
+  // };
 
   listUser = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -66,6 +104,16 @@ export class AdminController {
       const { userId } = req.body;
       const users = await this.adminService.toggleUserBlock(new Types.ObjectId(userId));
       res.status(200).json(users);
+    } catch (error) {
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  };
+
+  managerBlock = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { managerId } = req.body;
+      const managers = await this.adminService.toggleUserBlock(new Types.ObjectId(managerId));
+      res.status(200).json(managers);
     } catch (error) {
       res.status(500).json({ message: 'Internal Server Error' });
     }
@@ -101,4 +149,14 @@ export class AdminController {
       res.status(500).json({ message: 'Internal Server Error' });
     }
   };
+
+  getDashboardStats = async(req: Request, res: Response):Promise<void> => {
+    try {
+      const stats = await this.dashboardService.getDashboardStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      res.status(500).json({ message: 'Error fetching dashboard stats' });
+    }
+  }
 }

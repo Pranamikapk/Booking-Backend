@@ -33,6 +33,20 @@ export class AdminService implements IAdminService {
       return { user, token, refreshToken };  
     }
 
+    // async refreshToken(refreshToken: string): Promise<{ user: Partial<IUser>; token: string; refreshToken: string }> {
+    //   const decoded = refreshToken(refreshToken);
+    //   const user = await this.adminRepository.findById(decoded.user_id);
+      
+    //   if (!user) {
+    //     throw new Error('User not found');
+    //   }
+  
+    //   const newAccessToken = createToken(user._id, user.role);
+    //   const newRefreshToken = createRefreshToken(user._id, user.role);
+  
+    //   return { user, token: newAccessToken, refreshToken: newRefreshToken };
+    // }
+
   async listUsers(): Promise<IUser[]> {
     return this.adminRepository.findAllClients();
   }

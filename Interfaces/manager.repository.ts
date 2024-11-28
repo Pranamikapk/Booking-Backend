@@ -6,4 +6,5 @@ export interface IManagerRepository {
   create(managerData: Partial<IManager>): Promise<IManager>;
   findById(id: string): Promise<IManager | null>;
   update(id: string, updateData: Partial<IManager>): Promise<IManager | null>;
+  updateWallet(managerId: string, amount: number): Promise<IManager | null>;
 }

@@ -10,7 +10,10 @@ export class BookingController {
  
   async createBooking(req: Request, res: Response) {
     try {
-      const result = await this.bookingService.createBooking(req.body, req.user_id);
+      const user = req.body.user
+      const result = await this.bookingService.createBooking(req.body, user);
+      console.log("Result:",result);
+      
       res.status(200).json(result);
     } catch (error:any) {
       console.error('Error creating booking:', error);
@@ -31,11 +34,12 @@ export class BookingController {
     }
   }
 
-  async listBookings(req: Request, res: Response) {
+  async listBookings(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user_id;
       if (!userId) {
-        return res.status(401).json({ message: 'User not authenticated' });
+         res.status(401).json({ message: 'User not authenticated' });
+         return
       }
       const bookings = await this.bookingService.listBookings(userId);
       res.status(200).json(bookings);
@@ -47,10 +51,12 @@ export class BookingController {
 
   async bookingDetails(req: Request, res: Response) {
     try {
-      const {bookingId} = req.params;
-      console.log(bookingId);
+      const { bookingId } = req.params ;
+      const userId = req.user_id ;
+      console.log('User ID from token:', req.user_id); 
+      console.log('BookingId:', bookingId, 'UserId:', userId);
       
-      const booking = await this.bookingService.getBookingDetails(bookingId);
+      const booking = await this.bookingService.getBookingDetails(bookingId, userId);
       res.status(200).json(booking);
     } catch (error:any) {
       console.error("Error fetching booking details:", error);
@@ -60,7 +66,7 @@ export class BookingController {
 
   async listReservations(req: Request, res: Response, next: NextFunction): Promise<void>{
     try {
-      const {managerId} = req.params;
+      const managerId = req.user_id;      
       if (!managerId) {
          res.status(401).json({ message: 'Manager not authenticated' });
          return
@@ -74,6 +80,21 @@ export class BookingController {
     } catch (error:any) {
       console.error("Error fetching reservations:", error);
       next(error); 
+    }
+  }
+
+  async reservationDetails(req: Request, res: Response) {
+    try {
+      console.log("Insideeeeee");
+      const { bookingId } = req.params ;
+      const userId = req.user_id ;
+      console.log('BookingId:', bookingId, 'ManagerId:', userId);
+      
+      const booking = await this.bookingService.getReservationDetails(bookingId, userId);
+      res.status(200).json(booking);
+    } catch (error:any) {
+      console.error("Error fetching booking details:", error);
+      res.status(500).json({ message: 'Error fetching booking details', error: error.message });
     }
   }
 

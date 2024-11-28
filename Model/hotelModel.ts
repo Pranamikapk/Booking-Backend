@@ -4,7 +4,7 @@ import { IHotel } from "../Interfaces/common.interface";
 
 const HotelSchema: Schema = new Schema<IHotel>(
   {
-    manager: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    manager: { type: Schema.Types.ObjectId, ref: "Manager", required: true },
     propertyType: { type: String, enum: ["Resort", "Flat/Apartment", "House", "Beach House"], required: true },
     placeType: { type: String, enum: ["Room", "Entire Place", "Shared Space"], required: true },
     name: { type: String, required: true },

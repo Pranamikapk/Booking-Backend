@@ -5,7 +5,7 @@ import { ICancellation } from "../Interfaces/common.interface";
 const CancellationSchema: Schema = new Schema<ICancellation>({
   bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true },
   reason: { type: String, required: true },
-  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
   createdAt: { type: Date, default: Date.now },
 });
 

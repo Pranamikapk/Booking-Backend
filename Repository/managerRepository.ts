@@ -21,11 +21,19 @@ export class ManagerRepository implements IManagerRepository {
 
   async findById(id: string): Promise<IManager | null> {
     const manager = await this.managerModel.findById(id)
-    console.log('manager:',manager);
     return manager
   }
 
   async update(id: string, updateData: Partial<IManager>): Promise<IManager | null> {
     return this.managerModel.findByIdAndUpdate(id, updateData, { new: true });
+  }
+
+  async updateWallet(managerId: string, amount: number): Promise<IManager | null> {
+    const updatedManager = await this.managerModel.findByIdAndUpdate(
+      managerId,
+      { $inc: { wallet: amount } },
+      { new: true }
+    ).populate('hotel')
+    return updatedManager;
   }
 }

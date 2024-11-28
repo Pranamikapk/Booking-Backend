@@ -6,11 +6,6 @@ export class UserRepository implements IUserRepository {
   private userModel : Model<IUser>
 
   constructor(userModel: Model<IUser>) {
-    if (!userModel) {
-      throw new Error("User model is required");
-  }
-      console.log("Instantiating UserRepository with model:", userModel);
-
     this.userModel = userModel;
   }  
   
@@ -53,5 +48,14 @@ export class UserRepository implements IUserRepository {
     user.resetPasswordExpires = tokenExpires;
 
     await user.save();
+  }
+
+  async updateWallet(userId: string, amount: number): Promise<IUser | null> {
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $inc: { wallet: amount } },
+      { new: true } 
+    );
+    return updatedUser;
   }
 }

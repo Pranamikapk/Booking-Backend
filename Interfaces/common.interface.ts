@@ -55,7 +55,7 @@ export interface IRooms {
 
 export interface IHotel {
   _id: Types.ObjectId;
-  manager: Types.ObjectId | IUser;
+  manager: Types.ObjectId | IManager;
   propertyType: "Resort" | "Flat/Apartment" | "House" | "Beach House";
   placeType: "Room" | "Entire Place" | "Shared Space";
   name: string;
@@ -107,7 +107,7 @@ export interface ICancellation {
   _id: Types.ObjectId;
   bookingId: Types.ObjectId;
   reason: string;
-  status: "pending" | "approved" | "rejected";
+  status: "Pending" | "Approved" | "Rejected";
   createdAt?: Date;
 }
 
@@ -134,12 +134,44 @@ export interface IBooking {
   totalPrice: number;
   totalDays: number;
   transactionId: string;
-  status: "pending" | "cancelled" | "completed" | "cancellation_pending";
+  status: "Pending" | "Cancelled" | "Completed" | "Cancellation_pending" | "Approved" | "Rejected";
   amountPaid: number;
   remainingAmount: number;
   revenueDistribution: IRevenueDistribution;
   userCredentials: IUserCredentials;
   cancellationRequest?: Types.ObjectId | ICancellation;
   paymentDate ?: Date;
-  // updatedAt?: Date;
+  createdAt?: Date;
 }
+
+export interface ITransaction {
+  bookingId: Types.ObjectId;
+  hotelName: string;
+  guestName: string;
+  checkInDate: Date;
+  checkOutDate: Date;
+  totalPrice: number;
+  adminRevenue?: number;
+  managerRevenue?: number;
+  createdAt: Date;
+}
+
+export interface Message {
+  _id:  Types.ObjectId;
+  sender: string;
+  receiver: string;
+  content: string;
+  timestamp: Date;
+  bookingId: string;
+  read: boolean;
+}
+
+export interface ChatRoom {
+  _id: string;
+  bookingId: string;
+  userId: string;
+  managerId: string;
+  lastMessage?: Message;
+  updatedAt: Date;
+}
+
