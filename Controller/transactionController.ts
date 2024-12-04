@@ -7,6 +7,8 @@ export class TransactionController {
   getAdminTransactions = async (req: Request, res: Response): Promise<void> => {
     try {
       const transactions = await this.transactionService.getAdminTransactions();
+      console.log(transactions);
+      
       res.status(200).json(transactions);
     } catch (error) {
       console.error("Error fetching admin transactions:", error);

@@ -43,10 +43,8 @@ export class UserRepository implements IUserRepository {
     if (!user) {
       throw new Error("User not found.");
     }
-
     user.resetPasswordToken = token;
     user.resetPasswordExpires = tokenExpires;
-
     await user.save();
   }
 
@@ -58,4 +56,18 @@ export class UserRepository implements IUserRepository {
     );
     return updatedUser;
   }
+
+  // async getChatFriends(userId: string): Promise<IUser[]> {
+  //   try {
+  //     const friend = await this.userModel.aggregate([
+  //       { $match: { userId: userId } },
+  //       { $unwind: "$alreadyChattedManager" },
+  //       { $lookup: {from: "users", localField: "alreadyChattedManager", foreignField: "user_id" , as :"managerDetails" } },
+  //       { $unwind: "$managerDetails" },
+  //       { $project: { "managerDetails.name": 1, "managerDetails.user_id":1 , _id:0}}
+  //     ])
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
 }

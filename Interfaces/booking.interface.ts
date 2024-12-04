@@ -11,6 +11,7 @@ export interface IBookingRepository {
   export interface IBookingService {
     createBooking(bookingData: any, user: any): Promise<{ booking: IBooking; orderId: string; amountPaid: number; remainingAmount: number }>;
     verifyPayment(paymentData: any, bookingId: string): Promise<IBooking>;
+    walletPayment(bookingId: string, userId: string, amount: number): Promise<IBooking> 
     listBookings(userId: string): Promise<IBooking[]>;
     getBookingDetails(bookingId: string , managerId : any): Promise<IBooking>;
     listReservations(managerId: string): Promise<IBooking[]>;

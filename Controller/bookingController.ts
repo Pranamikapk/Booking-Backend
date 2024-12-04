@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import HTTP_statusCode from '../Enums/httpStatusCodes';
 import { IBookingService } from '../Interfaces/booking.interface';
 
 export class BookingController {
@@ -31,6 +32,20 @@ export class BookingController {
     } catch (error:any) {
       console.error('Error verifying payment:', error);
       res.status(500).json({ message: 'Failed to verify payment', error: error.message });
+    }
+  }
+
+  async walletPayment(req: Request, res: Response) {
+    try {
+      const { bookingId, amount } = req.body;
+      const userId = req.user_id as string 
+      if(!userId){
+        res.status(HTTP_statusCode.BadRequest).json({ message: 'User not authenticated' })
+      }
+      const result = await this.bookingService.walletPayment(bookingId, userId, amount);
+      res.status(200).json({ message: "Wallet payment successful", booking: result });
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
     }
   }
 

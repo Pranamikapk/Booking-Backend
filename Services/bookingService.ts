@@ -144,6 +144,55 @@ async verifyPayment(paymentData: any, bookingId: string) {
   return updatedBooking;
 }
 
+
+async walletPayment(bookingId: string, userId: string, amount: number): Promise<IBooking> {
+  const user = await this.userRepository.findById(userId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.wallet || user.wallet < amount) {
+    throw new Error("Insufficient wallet balance");
+  }
+
+  const booking = await this.bookingRepository.findById(bookingId);
+  if (!booking) {
+    throw new Error("Booking not found");
+  }
+
+  await this.userRepository.updateWallet(userId, -amount);
+
+  booking.status = "Completed";
+  booking.amountPaid = amount;
+  booking.remainingAmount = 0;
+  booking.paymentDate = new Date();
+
+  const updatedBooking = await this.bookingRepository.update(bookingId, booking);
+  if (!updatedBooking) {
+    throw new Error("Failed to update booking");
+  }
+
+  const adminShare = (amount * ADMIN_COMMISSION_PERCENTAGE) / 100;
+  const managerShare = amount - adminShare;
+
+  await this.userRepository.updateWallet(process.env.ADMIN_ID!, adminShare);
+  
+  if (booking.hotel && typeof booking.hotel === 'object' && 'manager' in booking.hotel) {
+    const hotel = booking.hotel as IHotel;
+    if (hotel.manager instanceof Types.ObjectId) {
+      await this.managerRepository.updateWallet(hotel.manager.toString(), managerShare);
+    } else if (typeof hotel.manager === 'object' && '_id' in hotel.manager) {
+      await this.managerRepository.updateWallet(hotel.manager._id.toString(), managerShare);
+    } else {
+      throw new Error("Invalid hotel data: Manager not found");
+    }
+  } else {
+    throw new Error("Invalid hotel data");
+  }
+
+  return updatedBooking;
+}
+
   
 
   async listBookings(userId: string) {

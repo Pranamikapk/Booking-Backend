@@ -11,18 +11,21 @@ import { IHotelService } from "../Interfaces/hotel.service.interface";
 import { IManagerService } from "../Interfaces/manager.service";
 import { ITransactionService } from "../Interfaces/transaction.interface";
 import BookingModel from "../Model/bookingModel";
+import chatModel from "../Model/chatModel";
 import Hotel from "../Model/hotelModel";
 import ManagerModel from "../Model/managerModel";
 import User from "../Model/userModel";
 import { BookingRepository } from "../Repository/bookingRepository";
-import { ChatRepository } from "../Repository/chatRepository";
+import ChatRepository from "../Repository/chatRepository";
 import { HotelRepository } from "../Repository/hotelRepository";
+import { ManagerDashboardRepository } from "../Repository/managerDashboardRepository";
 import { ManagerRepository } from "../Repository/managerRepository";
 import { TransactionRepository } from "../Repository/transactionRepository";
 import { UserRepository } from "../Repository/userRepository";
 import { BookingService } from "../Services/bookingService";
-import { ChatService } from "../Services/chatService";
+import ChatService from "../Services/chatService";
 import { HotelService } from "../Services/hotelService";
+import { ManagerDashboardService } from "../Services/managerDashboardService";
 import { ManagerService } from "../Services/managerService";
 import { TransactionService } from "../Services/transactionServices";
 
@@ -36,7 +39,8 @@ const transactionRepository = new TransactionRepository(
   BookingModel,
   ManagerModel
 );
-const chatRepository = new ChatRepository();
+const chatRepository = new ChatRepository(chatModel);
+const managerDashboardRepository = new ManagerDashboardRepository()
 
 const managerService: IManagerService = new ManagerService(managerRepository);
 const hotelService: IHotelService = new HotelService(hotelRepository);
@@ -49,8 +53,9 @@ const transactionService: ITransactionService = new TransactionService(
   transactionRepository
 );
 const chatService = new ChatService(chatRepository);
+const managerDashboardService = new ManagerDashboardService(managerDashboardRepository)
 
-const managerController = new ManagerController(managerService);
+const managerController = new ManagerController(managerService,managerDashboardService);
 const hotelController = new HotelController(hotelService);
 const bookingController = new BookingController(bookingService);
 const transactionController = new TransactionController(transactionService);
@@ -145,12 +150,11 @@ managerRouter.get(
   transactionController.getManagerTransactions(req,res)
 );
 
-managerRouter.post("/send", managerVerifyToken, chatController.sendMessage);
-managerRouter.get("/rooms", managerVerifyToken, chatController.getChatRooms);
-managerRouter.get(
-  "/:bookingId",
-  managerVerifyToken,
-  chatController.getMessages
-);
+managerRouter.get("/stats", managerVerifyToken, managerController.getManagerDashboardStats);
+
+
+managerRouter.post('/send', managerVerifyToken, chatController.sendMessage);
+managerRouter.get('/rooms', managerVerifyToken, chatController.getChatRooms);
+managerRouter.get('/:bookingId', managerVerifyToken, chatController.getMessages);
 
 export default managerRouter;

@@ -10,7 +10,7 @@ export class TransactionRepository implements ITransactionRepository {
 
   async getAdminTransactions(): Promise<ITransaction[]> {
     const transactions = await this.bookingModel
-      .find({ status: 'completed' })
+      .find({ status: 'Completed' })
       .populate({
         path: 'user',
         select: 'name email',
@@ -33,7 +33,7 @@ export class TransactionRepository implements ITransactionRepository {
     const transactions = await this.bookingModel
       .find({
         hotel: { $in: manager.hotels },
-        status: 'completed',
+        status: { $in :['Completed','Cancelled']},
       })
       .populate({
         path: 'user',
@@ -45,8 +45,13 @@ export class TransactionRepository implements ITransactionRepository {
       })
       .sort({ createdAt: -1 });
 
-    return transactions.map((transaction) => this.mapToManagerTransaction(transaction));
-  }
+      return transactions.map((transaction) => {
+        if (transaction.status === 'Cancelled') {
+          transaction.totalPrice = 0;  
+          transaction.revenueDistribution.admin = 0;
+        }
+        return this.mapToAdminTransaction(transaction);
+      });  }
 
   private mapToAdminTransaction(transaction: IBooking): ITransaction {
     const hotel = transaction.hotel as IHotel;

@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Document, ObjectId, Types } from "mongoose";
 
 export interface IUser extends Document{
   _id: Types.ObjectId;
@@ -156,22 +156,33 @@ export interface ITransaction {
   createdAt: Date;
 }
 
-export interface Message {
-  _id:  Types.ObjectId;
+// export interface IMessage {
+//   sender: string;
+//   receiver: string;
+//   content: string;
+//   timestamp: Date;
+// }
+
+// export interface IChat extends Document {
+//   _id: ObjectId; 
+//   manager: string;
+//   user: string;
+//   hotelId: string;
+//   messages: IMessage[];
+//   createdAt?: Date;
+//   updatedAt?: Date;
+// }
+
+export interface IMessage {
   sender: string;
-  receiver: string;
   content: string;
   timestamp: Date;
-  bookingId: string;
-  read: boolean;
 }
 
-export interface ChatRoom {
-  _id: string;
+export interface IChat extends Document {
+  _id: string | ObjectId;
   bookingId: string;
-  userId: string;
   managerId: string;
-  lastMessage?: Message;
-  updatedAt: Date;
+  userId: string;
+  messages: IMessage[];
 }
-

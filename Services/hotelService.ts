@@ -11,8 +11,6 @@ export class HotelService implements IHotelService {
   }
 
   async findAll(): Promise<IHotel[]> {
-    console.log('hii');
-    
       return await this.hotelRepository.findAll();
   }
 

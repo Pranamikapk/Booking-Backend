@@ -1,12 +1,16 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import { Types } from 'mongoose';
 import { createToken } from '../Config/jwt_config';
 import HTTP_statusCode from '../Enums/httpStatusCodes';
 import { IManager } from '../Interfaces/common.interface';
+import { IManagerDashboardService } from '../Interfaces/manager.dashboard.interface';
 import { IManagerService } from '../Interfaces/manager.service';
 
 export class ManagerController {
-  constructor(private managerService: IManagerService) {}
+  constructor(private managerService: IManagerService,
+    private managerDashboardService: IManagerDashboardService
+  ) {}
 
   register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -120,6 +124,22 @@ export class ManagerController {
     } catch (error) {
       console.error(error);
       res.status(HTTP_statusCode.InternalServerError).json({ message: "Something went wrong" });
+    }
+  };
+
+  getManagerDashboardStats = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user_id; 
+      if (!userId) {
+        res.status(401).json({ message: 'Unauthorized: User ID not found' });
+        return;
+      }
+      const managerId = new Types.ObjectId(userId);
+      const stats = await this.managerDashboardService.getManagerDashboardStats(managerId);
+      res.status(200).json(stats);
+    } catch (error) {
+      console.error('Error fetching manager dashboard stats:', error);
+      res.status(500).json({ message: 'Error fetching dashboard stats' });
     }
   };
 }
