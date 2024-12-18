@@ -11,6 +11,7 @@ const BookingSchema: Schema = new Schema<IBooking>(
     guests: { type: Number, required: true, min: 1 },
     totalPrice: { type: Number, required: true, min: 0 },
     totalDays: { type: Number, required: true, min: 1 },
+    transactionType: { type: String, enum: ["Razor Pay","Wallet"]},
     transactionId: { type: String, required: true },
     status: { type: String, enum: ["Pending", "Cancelled", "Completed", "Cancellation_pending" , "Approved","Rejected"], default: "Pending" },
     amountPaid: { type: Number, required: true, min: 0 },

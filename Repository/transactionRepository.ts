@@ -8,6 +8,22 @@ export class TransactionRepository implements ITransactionRepository {
     private managerModel: Model<IManager>
   ) {}
 
+  async getUserTransactions(userId: string): Promise<ITransaction[]> {
+    const transactions = await this.bookingModel
+      .find({
+        user: userId,
+        // status: { $in: ['Completed', 'Cancelled'] },
+      })
+      .populate({
+        path: 'hotel',
+        select: 'name address',
+      })
+      .sort({ createdAt: -1 });
+      console.log(transactions);
+      
+    return transactions.map((transaction) => this.mapToUserTransaction(transaction));
+  }
+
   async getAdminTransactions(): Promise<ITransaction[]> {
     const transactions = await this.bookingModel
       .find({ status: 'Completed' })
@@ -18,6 +34,10 @@ export class TransactionRepository implements ITransactionRepository {
       .populate({
         path: 'hotel',
         select: 'name address',
+        populate: {
+          path: 'manager',
+          select: 'name email',
+        },
       })
       .sort({ createdAt: -1 });
 
@@ -42,6 +62,10 @@ export class TransactionRepository implements ITransactionRepository {
       .populate({
         path: 'hotel',
         select: 'name address',
+        populate: {
+          path: 'manager',
+          select: 'name email',
+        },
       })
       .sort({ createdAt: -1 });
 
@@ -50,8 +74,26 @@ export class TransactionRepository implements ITransactionRepository {
           transaction.totalPrice = 0;  
           transaction.revenueDistribution.admin = 0;
         }
-        return this.mapToAdminTransaction(transaction);
+        return this.mapToManagerTransaction(transaction);
       });  }
+
+
+  private mapToUserTransaction(transaction: IBooking): ITransaction {
+    const hotel = transaction.hotel as IHotel;
+    const user = transaction.user as IUser; 
+
+    return {
+      bookingId: transaction._id,
+      hotelName: hotel.name,
+      guestName: user.name || 'Unknown Guest',
+      checkInDate: transaction.checkInDate,
+      checkOutDate: transaction.checkOutDate,
+      totalPrice: transaction.totalPrice,
+      transactionType: transaction.transactionType,
+      status: transaction.status,
+      createdAt: transaction.createdAt!,
+    };
+  }
 
   private mapToAdminTransaction(transaction: IBooking): ITransaction {
     const hotel = transaction.hotel as IHotel;
@@ -64,6 +106,7 @@ export class TransactionRepository implements ITransactionRepository {
       checkInDate: transaction.checkInDate,
       checkOutDate: transaction.checkOutDate,
       totalPrice: transaction.totalPrice,
+      transactionType: transaction.transactionType,
       adminRevenue: transaction.revenueDistribution.admin,
       createdAt: transaction.createdAt!,
     };
@@ -80,6 +123,7 @@ export class TransactionRepository implements ITransactionRepository {
       checkInDate: transaction.checkInDate,
       checkOutDate: transaction.checkOutDate,
       totalPrice: transaction.totalPrice,
+      transactionType: transaction.transactionType,
       managerRevenue: transaction.revenueDistribution.manager,
       createdAt: transaction.createdAt!,
     };

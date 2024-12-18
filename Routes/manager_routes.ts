@@ -47,7 +47,8 @@ const hotelService: IHotelService = new HotelService(hotelRepository);
 const bookingService: IBookingService = new BookingService(
   bookingRepository,
   userRepository,
-  managerRepository
+  managerRepository,
+  hotelRepository
 );
 const transactionService: ITransactionService = new TransactionService(
   transactionRepository
@@ -130,6 +131,12 @@ managerRouter.get(
   "/reservations/:bookingId",
   managerVerifyToken,(req: Request, res: Response) =>
     bookingController.reservationDetails(req, res)
+);
+
+managerRouter.get(
+  "/listRequests",
+  managerVerifyToken,(req: Request, res: Response) =>
+    bookingController.listCancellationRequests(req, res)
 );
 
 managerRouter.post(

@@ -11,7 +11,7 @@ class ChatRepository implements IChatRepository {
 
   async getChat(managerId: string, userId: string, bookingId: string): Promise<IChat | null> {
     try {
-      return await this.chatModel.findOne({ manager: managerId, user: userId, bookingId: bookingId });
+      return await this.chatModel.findOne({ manager: managerId, user: userId, bookingId: bookingId }).populate('user','name')
     } catch (error) {
       throw error;
     }
@@ -38,8 +38,8 @@ class ChatRepository implements IChatRepository {
   async saveMessage(chatId: string, message: IMessage): Promise<IChat | null> {
     try {
       console.log("Saving message to chatId:", chatId);
-      if (!message) {
-        console.error("Message content missing:", message);
+      if (!message.content) {
+        console.error("Message content missing:", message.content);
         throw new Error("Message content is required");
       }
         const updatedChat = await this.chatModel.findByIdAndUpdate(
@@ -58,7 +58,7 @@ class ChatRepository implements IChatRepository {
 
   async getChatByBookingId(bookingId: string): Promise<IChat | null> {
     try {
-      return await this.chatModel.findOne({ bookingId: bookingId });
+      return await this.chatModel.findOne({ bookingId }).populate('user','name').populate('manager', 'name')
     } catch (error) {
       throw error;
     }

@@ -53,11 +53,22 @@ export interface IRooms {
   bathrooms: number;
 }
 
+export interface RoomCategory {
+  name: string;
+  bedType: string;
+  capacity: number;
+  quantity: number;
+  rate: number;
+  description?: string;
+}
+
+
 export interface IHotel {
   _id: Types.ObjectId;
   manager: Types.ObjectId | IManager;
   propertyType: "Resort" | "Flat/Apartment" | "House" | "Beach House";
   placeType: "Room" | "Entire Place" | "Shared Space";
+  roomCategories: RoomCategory[];
   name: string;
   address: IAddress;
   rooms: IRooms;
@@ -78,6 +89,7 @@ export interface IHotel {
 export interface ICreateHotelDTO {
   propertyType: IHotel['propertyType'];
   placeType: IHotel['placeType'];
+  roomCategories: RoomCategory[];
   name: string;
   address: IAddress;
   rooms: IRooms;
@@ -91,6 +103,7 @@ export interface ICreateHotelDTO {
 export interface IUpdateHotelDTO {
   propertyType?: IHotel['propertyType'];
   placeType?: IHotel['placeType'];
+  roomCategories: RoomCategory[];
   name?: string;
   address?: Partial<IAddress>;
   rooms?: Partial<IRooms>;
@@ -133,6 +146,7 @@ export interface IBooking {
   guests: number;
   totalPrice: number;
   totalDays: number;
+  transactionType: string;
   transactionId: string;
   status: "Pending" | "Cancelled" | "Completed" | "Cancellation_pending" | "Approved" | "Rejected";
   amountPaid: number;
@@ -150,6 +164,8 @@ export interface ITransaction {
   guestName: string;
   checkInDate: Date;
   checkOutDate: Date;
+  status?: string;
+  transactionType: string;
   totalPrice: number;
   adminRevenue?: number;
   managerRevenue?: number;

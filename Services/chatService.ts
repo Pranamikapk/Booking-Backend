@@ -11,7 +11,7 @@ class ChatService {
 
   async getOrCreateChat(sender: string, receiver: string, bookingId: string): Promise<IChat> {
     try {
-      let chat = await this.chatRepository.getChat(sender, receiver, bookingId);
+      let chat = await this.chatRepository.getChatByBookingId(bookingId);
       if (!chat) {
         chat = await this.chatRepository.createChat(sender, receiver, bookingId);
       }
@@ -23,6 +23,9 @@ class ChatService {
 
   async saveMessage(chatId: string, message: IMessage): Promise<IChat | null> {
     try {
+      if (!message.content) {
+        throw new Error("Message content is required");
+      }
       const updatedChat = await this.chatRepository.saveMessage(chatId, message);
       if (!updatedChat) {
         throw new Error("Failed to save message");

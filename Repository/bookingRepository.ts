@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { IBookingRepository } from '../Interfaces/booking.interface';
 import { IBooking } from '../Interfaces/common.interface';
 
@@ -9,6 +9,20 @@ export class BookingRepository implements IBookingRepository {
     const booking = new this.bookingModel(bookingData);
     return await booking.save();
   }
+
+  async findConflictingBookings( hotelId: Types.ObjectId, checkIn: Date, checkOut: Date ): Promise<IBooking[]> {
+    return this.bookingModel.find({
+      hotel: hotelId,
+      $or: [
+        { checkInDate: { $lte: checkOut, $gte: checkIn } },
+        { checkOutDate: { $gte: checkIn, $lte: checkOut } },
+        { checkInDate: { $gte: checkIn, $lte: checkOut } },
+        { checkOutDate: { $lte: checkOut, $gte: checkIn } },
+      ],
+    });
+  }
+
+  
 
   async findById(id: string): Promise<IBooking | null> {
     return await this.bookingModel.findById(id) .populate({
@@ -31,7 +45,10 @@ export class BookingRepository implements IBookingRepository {
   }
 
   async findByUserId(userId: string): Promise<IBooking[]> {
-    return await this.bookingModel.find({ user: userId }).populate('hotel').populate('cancellationRequest')
+    return await this.bookingModel.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .populate('hotel')
+    .populate('cancellationRequest')
   }
 
   async findByHotelIds(hotelIds: string[]): Promise<IBooking[]> {
@@ -39,6 +56,16 @@ export class BookingRepository implements IBookingRepository {
       .populate('user', 'name email phone')
       .populate('hotel', 'name address propertyType placeType')
       .populate('cancellationRequest','reason status')
-      .sort({ checkInDate: 1 });
+      .sort({ createdAt: -1 });
   }
+
+  async findAllCancellationRequests(): Promise<IBooking[]> {
+    return await this.bookingModel
+      .find({ status:'Cancellation_pending' })
+      .populate('user', 'name email phone') 
+      .populate('hotel', 'name address propertyType placeType') 
+      .populate('cancellationRequest', 'reason status createdAt')
+      .sort({ 'cancellationRequest.createdAt': 1 }); 
+  }
+  
 }

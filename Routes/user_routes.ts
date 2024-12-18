@@ -4,9 +4,11 @@ import { verifyToken } from "../Config/jwt_config";
 import { BookingController } from "../Controller/bookingController";
 import { ChatController } from "../Controller/chatController";
 import { HotelController } from "../Controller/hotelController";
+import { TransactionController } from "../Controller/transactionController";
 import { UserController } from "../Controller/userController";
 import { IBookingService } from "../Interfaces/booking.interface";
 import { IHotelService } from "../Interfaces/hotel.service.interface";
+import { ITransactionService } from "../Interfaces/transaction.interface";
 import { IUserService } from "../Interfaces/user.service.interface";
 import BookingModel from "../Model/bookingModel";
 import chatModel from "../Model/chatModel";
@@ -17,10 +19,12 @@ import { BookingRepository } from "../Repository/bookingRepository";
 import ChatRepository from "../Repository/chatRepository";
 import { HotelRepository } from "../Repository/hotelRepository";
 import { ManagerRepository } from "../Repository/managerRepository";
+import { TransactionRepository } from "../Repository/transactionRepository";
 import { UserRepository } from "../Repository/userRepository";
 import { BookingService } from "../Services/bookingService";
 import ChatService from "../Services/chatService";
 import { HotelService } from "../Services/hotelService";
+import { TransactionService } from "../Services/transactionServices";
 import { UserService } from "../Services/userService";
 
 const userRouter = express.Router();
@@ -30,16 +34,19 @@ const managerRepository = new ManagerRepository(ManagerModel)
 const hotelRepository = new HotelRepository(Hotel);
 const bookingRepository = new BookingRepository(BookingModel)
 const chatRepository = new ChatRepository(chatModel)
+const transactionRepository = new TransactionRepository(BookingModel,ManagerModel)
 
 const userService: IUserService = new UserService(userRepository);
 const hotelService: IHotelService = new HotelService(hotelRepository);
-const bookingService: IBookingService = new BookingService(bookingRepository,userRepository,managerRepository)
+const bookingService: IBookingService = new BookingService(bookingRepository,userRepository,managerRepository,hotelRepository)
 const chatService = new ChatService(chatRepository)
+const transactionService : ITransactionService = new TransactionService(transactionRepository)
 
 const userController = new UserController(userService);
 const hotelController = new HotelController(hotelService);
 const bookingController = new BookingController(bookingService)
 const chatController = new ChatController(chatService)
+const transactionController = new TransactionController(transactionService)
 
 userRouter.post(
   "/register",
@@ -95,6 +102,10 @@ userRouter.get("/hotel/:hotelId", (req: Request, res: Response) =>
   hotelController.getHotelById(req, res)
 );
 
+userRouter.post("/:hotelId/availability",(req: Request,res: Response)=>{
+  bookingController.checkAvailability(req,res)
+})
+
 userRouter.post("/booking" , (req: Request, res: Response) =>
   bookingController.createBooking(req,res) 
 )
@@ -111,6 +122,11 @@ userRouter.post('/walletPayment',verifyToken, (req: Request, res: Response) =>
 userRouter.get("/listBookings" ,verifyToken,
   bookingController.listBookings.bind(bookingController)
 )
+
+userRouter.get('/transactions', verifyToken, (req: Request, res: Response) =>
+  transactionController.getUserTransactions(req,res)
+);
+
 
 userRouter.get("/booking/:bookingId",verifyToken, (req: Request, res: Response) =>
   bookingController.bookingDetails(req,res)

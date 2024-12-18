@@ -131,15 +131,15 @@ export class ManagerController {
     try {
       const userId = req.user_id; 
       if (!userId) {
-        res.status(401).json({ message: 'Unauthorized: User ID not found' });
+        res.status(HTTP_statusCode.Unauthorized).json({ message: 'Unauthorized: User ID not found' });
         return;
       }
       const managerId = new Types.ObjectId(userId);
       const stats = await this.managerDashboardService.getManagerDashboardStats(managerId);
-      res.status(200).json(stats);
+      res.status(HTTP_statusCode.OK).json(stats);
     } catch (error) {
       console.error('Error fetching manager dashboard stats:', error);
-      res.status(500).json({ message: 'Error fetching dashboard stats' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Error fetching dashboard stats' });
     }
   };
 }

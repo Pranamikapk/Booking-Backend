@@ -52,17 +52,17 @@ export class HotelController {
       const managerId = new Types.ObjectId(req.user_id);
 
       if (!managerId) {
-        res.status(403).json({ message: "Unauthorized: Manager ID not found" });
+        res.status(HTTP_statusCode.NoAccess).json({ message: "Unauthorized: Manager ID not found" });
         return;
       }
 
       const hotel = await this.hotelService.createHotel(hotelData, managerId);
       console.log(hotel);
       
-      res.status(201).json(hotel);
+      res.status(HTTP_statusCode.CREATED).json(hotel);
     } catch (error) {
       console.error("Error creating hotel:", error);
-      res.status(500).json({ message: "Server error while creating hotel" });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while creating hotel" });
     }
   };
 
@@ -70,21 +70,27 @@ export class HotelController {
     try {
       const managerId = new Types.ObjectId(req.params.managerId);
       const hotels = await this.hotelService.listHotels(managerId);
-      res.status(200).json(hotels);
+      res.status(HTTP_statusCode.OK).json(hotels);
     } catch (error) {
       console.error("Error listing hotels:", error);
-      res.status(500).json({ message: "Server error while listing hotels" });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while listing hotels" });
     }
   };
 
   getHotelById = async (req: Request, res: Response): Promise<void> => {
     try {
       const hotelId = new Types.ObjectId(req.params.hotelId);
+      console.log("Hotel:",hotelId);
+      
+      if (!hotelId) {
+        res.status(400).send("Hotel ID is required");
+        return 
+    }
       const hotel = await this.hotelService.getHotelById(hotelId);
-      res.status(200).json(hotel);
+      res.status(HTTP_statusCode.OK).json(hotel);
     } catch (error) {
       console.error("Error fetching hotel details:", error);
-      res.status(404).json({ message: "Hotel not found" });
+      res.status(HTTP_statusCode.NotFound).json({ message: "Hotel not found" });
     }
   };
 
@@ -95,18 +101,18 @@ export class HotelController {
       const updateData: IUpdateHotelDTO = req.body.updatedData;
 
       if (!managerId) {
-        res.status(403).json({ message: "Unauthorized: Manager ID not found" });
+        res.status(HTTP_statusCode.Unauthorized).json({ message: "Unauthorized: Manager ID not found" });
         return;
       }
 
       const updatedHotel = await this.hotelService.updateHotel(hotelId, managerId, updateData);
-      res.status(200).json(updatedHotel);
+      res.status(HTTP_statusCode.OK).json(updatedHotel);
     } catch (error) {
       console.error("Error updating hotel:", error);
       if (error instanceof Error && error.message.includes('Unauthorized')) {
-        res.status(403).json({ message: error.message });
+        res.status(HTTP_statusCode.Unauthorized).json({ message: error.message });
       } else {
-        res.status(500).json({ message: "Server error while updating hotel" });
+        res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while updating hotel" });
       }
     }
   };
@@ -115,10 +121,10 @@ export class HotelController {
     try {
       const hotelId = new Types.ObjectId(req.params.hotelId);
       await this.hotelService.deleteHotel(hotelId);
-      res.status(200).json({ message: "Hotel deleted successfully" });
+      res.status(HTTP_statusCode.OK).json({ message: "Hotel deleted successfully" });
     } catch (error) {
       console.error("Error deleting hotel:", error);
-      res.status(500).json({ message: "Server error while deleting hotel" });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while deleting hotel" });
     }
   };
 
@@ -127,22 +133,28 @@ export class HotelController {
       const hotelId = new Types.ObjectId(req.params.hotelId);
       const { status } = req.body;
       const hotel = await this.hotelService.listUnlistHotel(hotelId, status);
-      res.status(200).json(hotel);
+      res.status(HTTP_statusCode.OK).json(hotel);
     } catch (error) {
       console.error("Error updating hotel listing status:", error);
-      res.status(500).json({ message: "Server error while updating hotel listing status" });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while updating hotel listing status" });
     }
   };
 
   updateAvailability = async (req: Request, res: Response): Promise<void> => {
     try {
-      const hotelId = new Types.ObjectId(req.params.hotelId);
-      const { availability } = req.body;
-      const hotel = await this.hotelService.updateAvailability(hotelId, availability);
-      res.status(200).json(hotel);
+      const { hotelId } = req.params;
+      const { dates,isAvailable } = req.body;
+      console.log("Controller:",hotelId,dates,isAvailable);
+      
+      const hotel = await this.hotelService.updateAvailability(new Types.ObjectId(hotelId), dates, isAvailable);
+      if (!hotel) {
+        res.status(HTTP_statusCode.NotFound).json({ message: 'Hotel not found' });
+        return
+      }
+      res.status(HTTP_statusCode.OK).json(hotel);
     } catch (error) {
       console.error("Error updating hotel availability:", error);
-      res.status(500).json({ message: "Server error while updating hotel availability" });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: "Server error while updating hotel availability" });
     }
   };
 }

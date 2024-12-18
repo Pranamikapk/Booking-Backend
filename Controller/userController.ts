@@ -166,7 +166,7 @@ export class UserController {
         phone: updatedUser.phone,
         token: createToken(updatedUser._id, 'client'),
         refreshToken: createRefreshToken(updatedUser._id,'client')
-
+        
       });
     } catch (error: any) {
       console.error("Error updating user:", error);

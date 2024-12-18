@@ -39,7 +39,7 @@ export class AdminController {
    });
       res.status(HTTP_statusCode.OK).json({message:"Logged In Successfully",user,token});
     } catch (error) {
-      res.status(400).json({ message: (error as Error).message });
+      res.status(HTTP_statusCode.BadRequest).json({ message: (error as Error).message });
     }
   };
 
@@ -84,18 +84,18 @@ export class AdminController {
   listUser = async (req: Request, res: Response): Promise<void> => {
     try {
       const users = await this.adminService.listUsers();
-      res.status(200).json(users);
+      res.status(HTTP_statusCode.OK).json(users);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
   listManager = async (req: Request, res: Response): Promise<void> => {
     try {
       const managers = await this.adminService.listManagers();
-      res.status(200).json(managers);
+      res.status(HTTP_statusCode.OK).json(managers);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
@@ -103,9 +103,9 @@ export class AdminController {
     try {
       const { userId } = req.body;
       const users = await this.adminService.toggleUserBlock(new Types.ObjectId(userId));
-      res.status(200).json(users);
+      res.status(HTTP_statusCode.OK).json(users);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
@@ -113,18 +113,18 @@ export class AdminController {
     try {
       const { managerId } = req.body;
       const managers = await this.adminService.toggleUserBlock(new Types.ObjectId(managerId));
-      res.status(200).json(managers);
+      res.status(HTTP_statusCode.OK).json(managers);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
   listHotels = async (req: Request, res: Response): Promise<void> => {
     try {
       const hotels = await this.adminService.listHotels();
-      res.status(200).json(hotels);
+      res.status(HTTP_statusCode.OK).json(hotels);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
@@ -133,9 +133,9 @@ export class AdminController {
       const { hotelId } = req.params;
       const { status } = req.body;
       const hotel = await this.adminService.approveHotel(new Types.ObjectId(hotelId), status);
-      res.status(200).json(hotel);
+      res.status(HTTP_statusCode.OK).json(hotel);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
@@ -144,19 +144,19 @@ export class AdminController {
       const { hotelId } = req.params;
       const { status } = req.body;
       const hotel = await this.adminService.listUnlistHotel(new Types.ObjectId(hotelId), status);
-      res.status(200).json(hotel);
+      res.status(HTTP_statusCode.OK).json(hotel);
     } catch (error) {
-      res.status(500).json({ message: 'Internal Server Error' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Internal Server Error' });
     }
   };
 
   getDashboardStats = async(req: Request, res: Response):Promise<void> => {
     try {
       const stats = await this.dashboardService.getDashboardStats();
-      res.json(stats);
+      res.status(HTTP_statusCode.OK).json(stats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
-      res.status(500).json({ message: 'Error fetching dashboard stats' });
+      res.status(HTTP_statusCode.InternalServerError).json({ message: 'Error fetching dashboard stats' });
     }
   }
 }

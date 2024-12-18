@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { io } from '../Config/socket_config';
 import HTTP_statusCode from '../Enums/httpStatusCodes';
 import { IMessage } from '../Interfaces/common.interface';
 import ChatService from '../Services/chatService';
@@ -21,17 +22,41 @@ export class ChatController {
         });
         return
       }
+      console.log('req.body:',req.body);
+      
 
       const message  : IMessage = {
         content , 
         sender: senderId,
         timestamp: new Date()
       }
+      console.log('Message to be sent:', message);
 
-      const chat = await this.chatService.getOrCreateChat(senderId, receiver, bookingId);
+
+      const chat = await this.chatService.getOrCreateChat(senderId, receiver._id, bookingId);
+      if (!chat || !chat._id) {
+        res.status(HTTP_statusCode.InternalServerError).json({
+          message: 'Chat creation or retrieval failed.',
+        });
+        return;
+      }
       const savedChat = await this.chatService.saveMessage(chat._id.toString(), message);
+      if (!savedChat) {
+        res.status(HTTP_statusCode.InternalServerError).json({ message: 'Failed to save message.' });
+        return;
+      }
+      
+      io.to(chat._id.toString()).emit('new message', {...message,chatId:chat._id });
+      console.log('Emitting new message to chat:', chat._id.toString());
+      console.log('Emitting new message to receiver:', `user-${receiver}`);
 
-      res.status(HTTP_statusCode.OK).json(savedChat);
+      io.to(`user-${receiver}`).emit('new message', {...message,chatId:chat._id });
+      io.to(`manager-${senderId}`).emit('new message', {...message,chatId:chat._id });
+      res.status(HTTP_statusCode.OK).json({
+        chatId: chat._id,
+        message: 'Message sent successfully.',
+        chat: savedChat
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       res.status(HTTP_statusCode.InternalServerError).json({ message: 'Error sending message' });
@@ -72,52 +97,4 @@ export class ChatController {
     }
   };
 }
-
-
-// import { Request, Response } from 'express';
-// import ChatService from '../Services/chatService';
-
-// const chatService = new ChatService();
-
-// export class ChatController {
-//   async getOrCreateChat(req: Request, res: Response) {
-//     try {
-//       const { bookingId, managerId, userId } = req.body;
-//       const chat = await chatService.getOrCreateChat(bookingId, managerId, userId);
-//       res.json(chat);
-//     } catch (error) {
-//       res.status(500).json({ error: 'Failed to get or create chat' });
-//     }
-//   }
-
-//   async addMessage(req: Request, res: Response) {
-//     try {
-//       const { chatId, message } = req.body;
-//       const updatedChat = await chatService.addMessage(chatId, message);
-//       res.json(updatedChat);
-//     } catch (error) {
-//       res.status(500).json({ error: 'Failed to add message' });
-//     }
-//   }
-
-//   async getChatsByUser(req: Request, res: Response) {
-//     try {
-//       const { userId } = req.params;
-//       const chats = await chatService.getChatsByUser(userId);
-//       res.json(chats);
-//     } catch (error) {
-//       res.status(500).json({ error: 'Failed to get chats' });
-//     }
-//   }
-
-//   async getChatsByManager(req: Request, res: Response) {
-//     try {
-//       const { managerId } = req.params;
-//       const chats = await chatService.getChatsByManager(managerId);
-//       res.json(chats);
-//     } catch (error) {
-//       res.status(500).json({ error: 'Failed to get chats' });
-//     }
-//   }
-// }
 

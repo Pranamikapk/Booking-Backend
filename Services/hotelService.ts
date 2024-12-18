@@ -20,7 +20,14 @@ export class HotelService implements IHotelService {
   }
 
   async createHotel(hotelData: ICreateHotelDTO, managerId: Types.ObjectId): Promise<IHotel> {
-    return await this.hotelRepository.create(hotelData, managerId);
+    return await this.hotelRepository.create({...hotelData,
+      roomCategories: hotelData.placeType === 'Room' || hotelData.placeType === 'Shared Space'
+        ? hotelData.roomCategories.map(category => ({
+            ...category,
+            availableUnits: category.quantity
+          }))
+        : []
+    }, managerId);
   }
 
   async listHotels(managerId: Types.ObjectId): Promise<IHotel[]> {
@@ -29,6 +36,8 @@ export class HotelService implements IHotelService {
 
   async getHotelById(hotelId: Types.ObjectId): Promise<IHotel> {
     const hotel = await this.hotelRepository.findById(hotelId);
+    console.log("Hotel:",hotel,hotelId);
+    
     if (!hotel) {
       throw new Error('Hotel not found');
     }
@@ -39,6 +48,14 @@ export class HotelService implements IHotelService {
     const hotel = await this.hotelRepository.findById(hotelId);
     if (!hotel) {
       throw new Error('Hotel not found');
+    }
+
+    if (updateData.roomCategories && Array.isArray(updateData.roomCategories) &&
+      (hotel.placeType === 'Room' || hotel.placeType === 'Shared Space')) {
+      updateData.roomCategories = updateData.roomCategories.map(category => ({
+        ...category,
+        availableUnits: category.quantity
+      }));
     }
 
     const updatedHotel = await this.hotelRepository.update(hotelId, updateData);
@@ -60,18 +77,28 @@ export class HotelService implements IHotelService {
     if (!hotel) {
       throw new Error('Hotel not found');
     }
-    const updatedHotel = await this.hotelRepository.update(hotelId, { isListed: status });
+    const updatedHotel = await this.hotelRepository.update(hotelId, { isListed: status , roomCategories: hotel.roomCategories});
     if (!updatedHotel) {
       throw new Error('Failed to update hotel listing status');
     }
     return updatedHotel;
   }
 
-  async updateAvailability(hotelId: Types.ObjectId, availability: IHotel['availability']): Promise<IHotel> {
-    const updatedHotel = await this.hotelRepository.updateAvailability(hotelId, availability);
+  
+  
+
+  async updateAvailability( hotelId: Types.ObjectId, dates: Date[], isAvailable: boolean): Promise<IHotel> {
+    if (!dates || dates.length === 0) {
+      throw new Error('Dates array must not be empty');
+    }
+  console.log("Service:",hotelId,dates,isAvailable);
+  
+    const updatedHotel = await this.hotelRepository.updateAvailability(hotelId, dates, isAvailable);
+    
     if (!updatedHotel) {
       throw new Error('Failed to update hotel availability');
     }
+  
     return updatedHotel;
   }
 }

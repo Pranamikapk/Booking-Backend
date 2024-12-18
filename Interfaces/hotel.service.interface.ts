@@ -10,5 +10,5 @@ export interface IHotelService {
     updateHotel(hotelId: Types.ObjectId, managerId: Types.ObjectId, updateData: IUpdateHotelDTO): Promise<IHotel>;
     deleteHotel(hotelId: Types.ObjectId): Promise<void>;
     listUnlistHotel(hotelId: Types.ObjectId, status: boolean): Promise<IHotel>;
-    updateAvailability(hotelId: Types.ObjectId, availability: IHotel['availability']): Promise<IHotel>;
-  }
+    updateAvailability( hotelId: Types.ObjectId, dates: Date[], isAvailable: boolean): Promise<IHotel> 
+    }

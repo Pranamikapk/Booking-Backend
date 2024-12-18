@@ -18,7 +18,7 @@ import Hotel from "../Model/hotelModel";
     
     async search(term: string, checkInDate: Date): Promise<IHotel[]> {
       return Hotel.find({
-        $and: [
+        $or: [
           {
             $or: [
               { "address.state": { $regex: term, $options: "i" } },
@@ -39,6 +39,7 @@ import Hotel from "../Model/hotelModel";
         ],
       });
     }
+
     async create(hotelData: ICreateHotelDTO, managerId: Types.ObjectId): Promise<IHotel> {
       const hotel = new this.hotelModel({ ...hotelData, manager: managerId });
       return await hotel.save();
@@ -60,7 +61,41 @@ import Hotel from "../Model/hotelModel";
       return await this.hotelModel.findByIdAndDelete(hotelId);
     }
   
-    async updateAvailability(hotelId: Types.ObjectId, availability: IHotel['availability']): Promise<IHotel | null> {
-      return await this.hotelModel.findByIdAndUpdate(hotelId, { availability }, { new: true });
+    async updateAvailability(hotelId: Types.ObjectId, dates: Date[], isAvailable: boolean): Promise<IHotel | null> {
+      console.log("Updating availability for:", hotelId, dates, isAvailable);
+    
+      const hotel = await this.hotelModel.findById(hotelId);
+      if (!hotel) {
+        throw new Error("Hotel not found");
+      }
+    
+      const existingDates = hotel.availability.map((a) => a.date.toISOString());
+      const newDates = dates.filter((d) => !existingDates.includes(d.toISOString()));
+    
+      if (newDates.length > 0) {
+        const newAvailability = newDates.map((date) => ({
+          date,
+          isAvailable: true,
+        }));
+    
+        await this.hotelModel.updateOne(
+          { _id: hotelId },
+          { $push: { availability: { $each: newAvailability } } }
+        );
+      }
+    
+      return await this.hotelModel.findByIdAndUpdate(
+        hotelId,
+        {
+          $set: {
+            'availability.$[dateElem].isAvailable': isAvailable,
+          },
+        },
+        {
+          arrayFilters: [{ 'dateElem.date': { $in: dates } }],
+          new: true,
+        }
+      );
     }
+    
   }

@@ -7,6 +7,7 @@ import {
   IBookingService,
 } from "../Interfaces/booking.interface";
 import { IBooking, IHotel } from "../Interfaces/common.interface";
+import { IHotelRepository } from "../Interfaces/hotel.repository.interface";
 import { IManagerRepository } from "../Interfaces/manager.repository";
 import { IUserRepository } from "../Interfaces/user.repository.interface";
 import CancellationModel from "../Model/cancellationModel";
@@ -18,11 +19,13 @@ export class BookingService implements IBookingService {
   private bookingRepository: IBookingRepository;
   private userRepository: IUserRepository;
   private managerRepository: IManagerRepository;
+  private hotelRepository: IHotelRepository;
 
   constructor(
     bookingRepository: IBookingRepository,
     userRepository: IUserRepository,
-    managerRepository: IManagerRepository
+    managerRepository: IManagerRepository,
+    hotelRepository: IHotelRepository
   ) {
     this.razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID!,
@@ -30,8 +33,37 @@ export class BookingService implements IBookingService {
     });
     this.bookingRepository = bookingRepository;
     this.userRepository = userRepository;
-    this.managerRepository = managerRepository;
+    this.managerRepository = managerRepository
+    this.hotelRepository = hotelRepository;
   }
+
+  async checkHotelAvailability(hotelId: any, checkIn: any, checkOut:any){
+    if (!checkIn || !checkOut) {
+      throw new Error('Check-in and check-out dates are required.');
+    }
+    console.log('Check-in:', checkIn);
+    console.log('Check-out:', checkOut);
+  
+    const parseDate = (dateStr: string) => {
+      const [day, month, year] = dateStr.split('/');
+      return new Date(`${year}-${month}-${day}T00:00:00`);
+    };
+  
+    const checkInDate = parseDate(checkIn);
+    const checkOutDate = parseDate(checkOut);
+    console.log('Check-inDate:', checkInDate);
+    console.log('Check-outDate:', checkOutDate);
+
+  if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+    throw new Error('Invalid check-in or check-out date.');
+  }
+
+    if (checkInDate >= checkOutDate) {
+      throw new Error('Check-in date must be before check-out date.');
+    }
+      const overlappingBookings = await this.bookingRepository.findConflictingBookings(hotelId, checkInDate, checkOutDate);
+    return overlappingBookings.length === 0;
+  };
 
   async createBooking(bookingData: any, user: any) {
     console.log("BookingData:", bookingData);
@@ -50,6 +82,32 @@ export class BookingService implements IBookingService {
 
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
+
+    const hotel = await this.hotelRepository.findById(hotelId);
+  if (!hotel) {
+    throw new Error("Hotel not found");
+  }
+
+  const unavailableDates = hotel.availability.filter(
+    (entry) =>
+      entry.date >= checkIn &&
+      entry.date <= checkOut &&
+      entry.isAvailable === false
+  );
+
+  if (unavailableDates.length > 0) {
+    throw new Error("Hotel is not available for the selected dates");
+  }
+
+  const conflictingBookings = await this.bookingRepository.findConflictingBookings(
+    hotelId,
+    checkIn,
+    checkOut
+  );
+
+  if (conflictingBookings.length > 0) {
+    throw new Error("Hotel is already booked for the selected dates");
+  }
 
     const totalDays = Math.ceil(
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
@@ -126,20 +184,52 @@ async verifyPayment(paymentData: any, bookingId: string) {
   if (!hotel || typeof hotel === 'string') {
     throw new Error("Hotel not populated correctly");
   }
-
+  const managerRevenue = booking.totalPrice * 0.7; 
+  const adminRevenue = booking.totalPrice - managerRevenue; 
   // const managerId = hotel.manager instanceof Types.ObjectId ? hotel.manager.toString() : hotel.manager._id.toString();
 
   booking.status = "Completed";
+  booking.transactionType = "Razor Pay";
   booking.transactionId = razorpayPaymentId;
   booking.paymentDate = new Date();
+  booking.revenueDistribution = {
+    admin: adminRevenue,
+    manager: managerRevenue
+  };
 
   const updatedBooking = await this.bookingRepository.update(bookingId, booking);
   if (!updatedBooking) {
     throw new Error("Failed to update booking");
   }
 
-  await this.userRepository.updateWallet(process.env.ADMIN_ID!, updatedBooking.revenueDistribution.admin);
-  // await this.managerRepository.updateWallet(managerId, updatedBooking.revenueDistribution.manager);
+  const checkIn = new Date(booking.checkInDate);
+  const checkOut = new Date(booking.checkOutDate);
+
+  const unavailableDates: Date[] = [];
+  for (let d = checkIn; d < checkOut; d.setDate(d.getDate() + 1)) {
+    unavailableDates.push(new Date(d));
+  }
+  await this.hotelRepository.updateAvailability(hotel._id, unavailableDates, false);
+
+console.log("hotel:",hotel);
+
+  if ('manager' in hotel) {
+    if (hotel.manager instanceof Types.ObjectId) {
+        const manager = await this.managerRepository.findById(hotel.manager.toString());
+        if (manager) {
+            await this.managerRepository.updateWallet(manager._id.toString(), managerRevenue);
+        } else {
+            throw new Error("Manager not found");
+        }
+    } else if (hotel.manager && hotel.manager._id) {
+        const manager = hotel.manager;  
+        await this.managerRepository.updateWallet(manager._id.toString(), managerRevenue);
+    } else {
+        throw new Error("Hotel manager not populated correctly");
+    }
+  } else {
+      throw new Error("Hotel object does not have a manager property");
+  }
 
   return updatedBooking;
 }
@@ -165,12 +255,26 @@ async walletPayment(bookingId: string, userId: string, amount: number): Promise<
   booking.status = "Completed";
   booking.amountPaid = amount;
   booking.remainingAmount = 0;
+  booking.transactionType = "Wallet"
   booking.paymentDate = new Date();
 
   const updatedBooking = await this.bookingRepository.update(bookingId, booking);
   if (!updatedBooking) {
     throw new Error("Failed to update booking");
   }
+
+  const checkIn = new Date(booking.checkInDate);
+  const checkOut = new Date(booking.checkOutDate);
+
+  const unavailableDates: Date[] = [];
+  let currentDate = new Date(checkIn);
+  while (currentDate < checkOut) {
+    unavailableDates.push(new Date(currentDate)); 
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+
+  await this.hotelRepository.updateAvailability(booking.hotel._id, unavailableDates, false);
 
   const adminShare = (amount * ADMIN_COMMISSION_PERCENTAGE) / 100;
   const managerShare = amount - adminShare;
@@ -180,8 +284,12 @@ async walletPayment(bookingId: string, userId: string, amount: number): Promise<
   if (booking.hotel && typeof booking.hotel === 'object' && 'manager' in booking.hotel) {
     const hotel = booking.hotel as IHotel;
     if (hotel.manager instanceof Types.ObjectId) {
+      console.log('Wallet updated');
+      
       await this.managerRepository.updateWallet(hotel.manager.toString(), managerShare);
     } else if (typeof hotel.manager === 'object' && '_id' in hotel.manager) {
+      console.log('wallet added');
+      
       await this.managerRepository.updateWallet(hotel.manager._id.toString(), managerShare);
     } else {
       throw new Error("Invalid hotel data: Manager not found");
@@ -252,6 +360,10 @@ async walletPayment(bookingId: string, userId: string, amount: number): Promise<
       throw new Error("Booking does not belong to any of the manager's hotels");
     }
     return booking;
+  }
+
+  async listCancelRequests(){
+    return await this.bookingRepository.findAllCancellationRequests()
   }
 
   async cancelRequest(bookingId: string, reason: string) {
@@ -353,7 +465,7 @@ async walletPayment(bookingId: string, userId: string, amount: number): Promise<
   }
   
   
-  async cancelReject(bookingId: string) {
+  async cancelReject(bookingId: string , reason: string) {
     try {
       const booking = await this.bookingRepository.findById(bookingId);
       if (!booking) throw new Error("Booking not found");
@@ -365,7 +477,9 @@ async walletPayment(bookingId: string, userId: string, amount: number): Promise<
       if (booking.cancellationRequest) {
         await CancellationModel.updateOne(
           { _id: booking.cancellationRequest._id },
-          { $set: { status: "rejected" } }
+          {  reason : reason,
+            status: 'Rejected'
+          },
         );
       } else {
         throw new Error("Cancellation request not found");

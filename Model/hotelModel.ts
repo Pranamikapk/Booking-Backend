@@ -2,11 +2,40 @@ import mongoose, { Schema } from "mongoose";
 import { IHotel } from "../Interfaces/common.interface";
 
 
+const RoomCategorySchema = new Schema({
+  name: { type: String, required: true },
+  bedType: { 
+    type: String, 
+    enum: ['Single Bed', 'Double Bed', 'Queen Bed', 'King Bed', 'Twin Beds'],
+    required: true 
+  },
+  capacity: { type: Number, required: true, min: 1 },
+  quantity: { type: Number, required: true, min: 1 },
+  rate: { type: Number, required: true, min: 0 },
+  description: { type: String },
+  availableUnits: { type: Number },
+});
+
 const HotelSchema: Schema = new Schema<IHotel>(
   {
     manager: { type: Schema.Types.ObjectId, ref: "Manager", required: true },
     propertyType: { type: String, enum: ["Resort", "Flat/Apartment", "House", "Beach House"], required: true },
     placeType: { type: String, enum: ["Room", "Entire Place", "Shared Space"], required: true },
+    roomCategories: {
+      type: [RoomCategorySchema],
+      required: function() {
+        return this.placeType === 'Room' || this.placeType === 'Shared Space';
+      },
+      validate: {
+        validator: function(categories: any[]) {
+          if (this.placeType === 'Room' || this.placeType === 'Shared Space') {
+            return categories && categories.length > 0;
+          }
+          return true;
+        },
+        message: 'At least one room category is required for Room or Shared Space types'
+      }
+    },
     name: { type: String, required: true },
     address: {
       city: { type: String, required: true },
@@ -36,6 +65,8 @@ const HotelSchema: Schema = new Schema<IHotel>(
   },
   { timestamps: true }
 );
+
+
 
 const Hotel = mongoose.model<IHotel>("Hotel", HotelSchema);
 export default Hotel;

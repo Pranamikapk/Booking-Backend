@@ -9,6 +9,6 @@ export interface IHotelRepository {
     findById(hotelId: Types.ObjectId): Promise<IHotel | null>;
     update(hotelId: Types.ObjectId, updateData: IUpdateHotelDTO): Promise<IHotel | null>;
     delete(hotelId: Types.ObjectId): Promise<IHotel | null>;
-    updateAvailability(hotelId: Types.ObjectId, availability: IHotel['availability']): Promise<IHotel | null>;
-  }
+    updateAvailability(hotelId: Types.ObjectId, dates: Date[], isAvailable: boolean): Promise<IHotel | null> 
+    }
   
