@@ -22,9 +22,10 @@ export class HotelController {
 
   search = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { term, checkInDate } = req.query;
-
-      if (!term || !checkInDate) {
+      const { term, checkInDate , checkOutDate} = req.query;
+      console.log("Query:",req.query);
+      
+      if (!term || !checkInDate || !checkOutDate) {
         res
           .status(HTTP_statusCode.BadRequest)
           .json({ message: "Search term and check-in date are required" });
@@ -33,9 +34,17 @@ export class HotelController {
 
       const hotels = await this.hotelService.search(
         term as string,
-        checkInDate as string
+        checkInDate as string,
+        checkOutDate as string
       );
+      console.log("Hotels:",hotels);
+      
+      if(!hotels){
+        res.status(HTTP_statusCode.NotFound).json({message:"No hotels found"});
+      }else{
+
       res.status(HTTP_statusCode.OK).json(hotels);
+    }
     } catch (error: any) {
       console.error("Error searching hotels:", error);
       res

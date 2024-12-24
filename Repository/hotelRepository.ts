@@ -16,21 +16,22 @@ import Hotel from "../Model/hotelModel";
       return this.hotelModel.find({isListed:true});
     }
     
-    async search(term: string, checkInDate: Date): Promise<IHotel[]> {
+    async search(term: string, checkInDate: Date ,checkOutDate: Date): Promise<IHotel[]> {
       return Hotel.find({
         $or: [
           {
             $or: [
+              { name: { $regex: term, $options: "i" } },
               { "address.state": { $regex: term, $options: "i" } },
               { "rooms.room": { $regex: term, $options: "i" } },
             ],
           },
           {
-            bookings: {
+            availability: {
               $not: {
                 $elemMatch: {
-                  checkIn: { $lte: checkInDate },
-                  checkOut: { $gte: checkInDate },
+                  date: { $gte: checkInDate, $lte: checkOutDate },
+                  isAvailable: false
                 },
               },
             },

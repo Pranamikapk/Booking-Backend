@@ -156,6 +156,7 @@ export interface IBooking {
   cancellationRequest?: Types.ObjectId | ICancellation;
   paymentDate ?: Date;
   createdAt?: Date;
+  updatedAt ?: Date;
 }
 
 export interface ITransaction {

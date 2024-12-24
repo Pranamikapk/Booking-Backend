@@ -55,6 +55,8 @@ export class DashboardRepository implements IDashboardRepository {
   }
 
   async getRecentActivity(limit: number): Promise<{ activity: string; date: Date; user: string; }[]> {
+    const activities: { activity: string; date: Date; user: string; }[] = [];
+
     const recentBookings = await this.bookingModel
       .find()
       .sort({ createdAt: -1 })
@@ -62,11 +64,92 @@ export class DashboardRepository implements IDashboardRepository {
       .populate('user', 'name')
       .lean();
 
-    return recentBookings.map(booking => ({
+    activities.push(...recentBookings.map(booking => ({
       activity: 'New Booking',
       date: booking.createdAt!,
       user: (booking.user as IUser).name || 'Unknown User'
-    }));
+    })));
+
+    const cancellationRequests = await this.bookingModel
+      .find({ status: 'Cancellation_pending' })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .populate('user', 'name')
+      .lean();
+
+    activities.push(...cancellationRequests.map(booking => ({
+      activity: 'Cancellation Request',
+      date: booking.updatedAt!,
+      user: (booking.user as IUser).name || 'Unknown User'
+    })));
+
+    const newHotels = await this.hotelModel
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate('manager', 'name')
+      .lean();
+
+    activities.push(...newHotels.map(hotel => ({
+      activity: 'New Hotel Added',
+      date: hotel.createdAt!,
+      user: (hotel.manager as IManager).name || 'Unknown Manager'
+    })));
+
+    const newUsers = await this.userModel
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    activities.push(...newUsers.map(user => ({
+      activity: 'New User Registered',
+      date: user.createdAt!,
+      user: user.name || 'Unknown User'
+    })));
+
+    const newManagers = await this.managerModel
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    activities.push(...newManagers.map(manager => ({
+      activity: 'New Manager Registered',
+      date: manager.createdAt!,
+      user: manager.name || 'Unknown Manager'
+    })));
+
+    // Manager Approval Requests
+    const managerApprovalRequests = await this.managerModel
+      .find({ isApproved: false })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    activities.push(...managerApprovalRequests.map(manager => ({
+      activity: 'Manager Approval Request',
+      date: manager.createdAt!,
+      user: manager.name || 'Unknown Manager'
+    })));
+
+    // Hotel Verification Requests
+    const hotelVerificationRequests = await this.hotelModel
+      .find({ isVerified: false })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate('manager', 'name')
+      .lean();
+
+    activities.push(...hotelVerificationRequests.map(hotel => ({
+      activity: 'Hotel Verification Request',
+      date: hotel.createdAt!,
+      user: (hotel.manager as IManager).name || 'Unknown Manager'
+    })));
+
+    return activities
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, limit);
   }
 }
 

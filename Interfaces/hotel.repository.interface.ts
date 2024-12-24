@@ -3,7 +3,7 @@ import { ICreateHotelDTO, IHotel, IUpdateHotelDTO } from "./common.interface";
 
 export interface IHotelRepository {
     findAll(): Promise<IHotel[]>;
-    search(term: string, checkInDate: Date): Promise<IHotel[]>;
+    search(term: string, checkInDate: Date , checkOutDate: Date): Promise<IHotel[]>;
     create(hotelData: ICreateHotelDTO, managerId: Types.ObjectId): Promise<IHotel>;
     findByManager(managerId: Types.ObjectId): Promise<IHotel[]>;
     findById(hotelId: Types.ObjectId): Promise<IHotel | null>;

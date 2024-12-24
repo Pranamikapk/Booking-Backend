@@ -14,9 +14,12 @@ export class HotelService implements IHotelService {
       return await this.hotelRepository.findAll();
   }
 
-  async search(term: string, checkInDate: string): Promise<IHotel[]> {
+  async search(term: string, checkInDate: string, checkOutDate: string): Promise<IHotel[]> {
       const checkIn = new Date(checkInDate); 
-      return await this.hotelRepository.search(term, checkIn);
+      const checkOut = new Date(checkOutDate);
+      console.log(term,checkIn,checkOut);
+      
+      return await this.hotelRepository.search(term, checkIn,checkOut);
   }
 
   async createHotel(hotelData: ICreateHotelDTO, managerId: Types.ObjectId): Promise<IHotel> {

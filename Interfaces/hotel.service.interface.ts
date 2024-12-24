@@ -3,7 +3,7 @@ import { ICreateHotelDTO, IHotel, IUpdateHotelDTO } from "./common.interface";
 
 export interface IHotelService {
     findAll(): Promise<IHotel[]>;
-    search(term: string, checkInDate: string): Promise<IHotel[]>;
+    search(term: string, checkInDate: string , checkOutDate: string): Promise<IHotel[]>;
     createHotel(hotelData: ICreateHotelDTO, managerId: Types.ObjectId): Promise<IHotel>;
     listHotels(managerId: Types.ObjectId): Promise<IHotel[]>;
     getHotelById(hotelId: Types.ObjectId): Promise<IHotel>;

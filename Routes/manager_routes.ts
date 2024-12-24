@@ -94,27 +94,31 @@ managerRouter.post(
   },
   hotelController.createHotel
 );
+
 managerRouter.get(
   "/hotels/:managerId",
   managerVerifyToken,(req: Request, res: Response) =>
   hotelController.listHotels(req,res)
 );
+
 managerRouter.get(
   "/hotel/:hotelId",
   managerVerifyToken,(req: Request, res: Response) =>
   hotelController.getHotelById(req,res)
 );
+
 managerRouter.put(
   "/hotel/:hotelId/edit",
   managerVerifyToken,(req: Request, res: Response) =>
   hotelController.updateHotel(req,res)
 );
+
 managerRouter.put(
   "/list/:hotelId",
   managerVerifyToken,(req: Request, res: Response) =>
-
   hotelController.listUnlistHotel(req,res)
 );
+
 managerRouter.delete(
   "/hotel/:hotelId",
   managerVerifyToken,(req: Request, res: Response) =>
@@ -158,7 +162,6 @@ managerRouter.get(
 );
 
 managerRouter.get("/stats", managerVerifyToken, managerController.getManagerDashboardStats);
-
 
 managerRouter.post('/send', managerVerifyToken, chatController.sendMessage);
 managerRouter.get('/rooms', managerVerifyToken, chatController.getChatRooms);
